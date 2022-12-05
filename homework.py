@@ -33,7 +33,7 @@ def send_message(bot, message):
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
 
-    except Exception as error:
+    except telegram.error.TelegramError as error:
         logging.error(f'Ошибка при отправке сообщения: {error}')
 
     else:
@@ -46,12 +46,14 @@ def get_api_answer(current_timestamp):
 
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-        response_content = response.json()
 
         if response.status_code != HTTPStatus.OK:
             raise exceptions.InvalidHttpStatus('Ошибка ответа API')
 
-        return response_content
+        else:
+            response_content = response.json()
+
+            return response_content
 
     except requests.exceptions.RequestException:
         raise exceptions.RequestException('Что-то пошло не так!')
@@ -97,13 +99,19 @@ def check_tokens():
         'telegram_token': TELEGRAM_TOKEN,
         'telegram_chat_id': TELEGRAM_CHAT_ID,
     }
+    count_error = 0
 
     for key, value in tokens.items():
         if not value:
             logging.critical(f'Отсутсвует переменная окружения {key}')
+            count_error += 1
+            pass
+
+        if count_error != 0:
             return False
 
-    return True
+        else:
+            return True
 
 
 def main():
@@ -114,6 +122,7 @@ def main():
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = 0
     last_message = ''
+    last_error_message = ''
 
     while True:
         try:
@@ -127,7 +136,9 @@ def main():
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            bot.send_message(TELEGRAM_CHAT_ID, message)
+            if message != last_error_message:
+                bot.send_message(TELEGRAM_CHAT_ID, message)
+                last_error_message = message
 
         finally:
             time.sleep(RETRY_PERIOD)
