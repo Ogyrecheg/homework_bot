@@ -35,6 +35,7 @@ def send_message(bot, message):
 
     except telegram.error.TelegramError as error:
         logging.error(f'Ошибка при отправке сообщения: {error}')
+        raise exceptions.SendMessageError('Упс, что-то пошло не так!')
 
     else:
         logging.debug('Сообщение отправлено!')
@@ -105,13 +106,11 @@ def check_tokens():
         if not value:
             logging.critical(f'Отсутсвует переменная окружения {key}')
             count_error += 1
-            pass
 
-        if count_error != 0:
+        if count_error:
             return False
 
-        else:
-            return True
+        return True
 
 
 def main():
@@ -133,6 +132,9 @@ def main():
                 send_message(bot, message)
                 last_message = message
                 current_timestamp = response.get('current_date')
+
+        except exceptions.SendMessageError:
+            logging.error('Ошибка при отправке сообщения!')
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'

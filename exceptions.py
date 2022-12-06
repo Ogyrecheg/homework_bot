@@ -4,3 +4,6 @@ class InvalidHttpStatus(Exception):
 
 class RequestException(Exception):
     pass
+
+class SendMessageError(Exception):
+    pass
